@@ -53,7 +53,6 @@ class Register extends Component {
             identifier: this.state.email,
             password: this.state.password
         }) 
-        //    console.log(data);
 
         await axios.post('https://appxiapi.loginweb.dev/drivers',{
             first_name: this.state.username,
@@ -62,7 +61,7 @@ class Register extends Component {
 
         let user = {
             id: data.user.id,
-            username: data.user.username ,
+            username: data.user.username,
             email: data.user.email,
             phone: data.user.phone,
             name: data.user.username,

@@ -48,7 +48,8 @@ class Login extends Component {
         if (result.isCancelled) {
             throw 'User cancelled the login process';
         }
-
+        let miaux = false;
+        let miuser = '';
         // Once signed in, get the users AccesToken
         AccessToken.getCurrentAccessToken()
         .then((data) => {
@@ -57,31 +58,68 @@ class Login extends Component {
             auth().signInWithCredential(facebookCredential);
 
             // Get information from Facebook API 
-            fetch(`https://graph.facebook.com/me?fields=id,name,email,avatart&access_token=${data.accessToken}`)
+            fetch(`https://graph.facebook.com/me?fields=id,name,email&access_token=${data.accessToken}`)
             .then(res => res.json())
-            .then(res => {
-                let user = {
-                    id: res.id,
-                    name: res.name,
-                    email: res.email ? res.email : `${res.id}@loginweb.dev`,
-                    codePhone: '+591',
-                    numberPhone: '',
-                    avatar: `http://graph.facebook.com/${res.id}/picture?type=large`,
-                    type: 'facebook'
-                }
+            
+            .then(async res => {
+                console.log(res.email);  
+               const strapi = await axios.get(`https://appxiapi.loginweb.dev/users?email=${res.email}`)
+            //    console.log(strapi.data); 
                 
-                this.props.setUser(user);
-                AsyncStorage.setItem('SessionUser', JSON.stringify(user));
-                this.props.navigation.reset({
-                    index: 0,
-                    routes: [{ name: 'TabMenu' }],
-                    key: null,
-                });
+                if (strapi.data.length) {
+                    console.log('existe');
+                    
+
+                }else{
+                    console.log('no existe');
+                    let login = {
+                        username: res.name,
+                        email:res.email,
+                        password:'password',
+                        phone: '591',
+                        confirmed:true
+                    }
+                    await axios.post('https://appxiapi.loginweb.dev/users', login);
+
+                    //------------  recuperar Token ----------------
+                    const { data } = await axios.post('https://appxiapi.loginweb.dev/auth/local', {
+                        identifier: res.email,
+                        password: 'password'
+                    }) 
+                    //------------ crear Driver ----------------------
+                    await axios.post('https://appxiapi.loginweb.dev/drivers',{
+                        first_name: res.name,
+                        user_id:  data.user.id
+                    })
+                } 
+                // let user = {
+                //     id: res.id,
+                //     name: res.name,
+                //     email: res.email ? res.email : `${res.id}@loginweb.dev`,
+                //     codePhone: '+591',
+                //     numberPhone: '',
+                //     avatar: `http://graph.facebook.com/${res.id}/picture?type=large`,
+                //     type: 'facebook'
+                // }
+                // this.props.setUser(user);
+                // AsyncStorage.setItem('SessionUser', JSON.stringify(user));
+                // this.props.navigation.reset({
+                //     index: 0,
+                //     routes: [{ name: 'TabMenu' }],
+                //     key: null,
+                // });
             })
             .catch(error => {
                 console.log(error);
             })
+            
         })
+        console.log(miuser);
+        if (miaux) {
+        
+            console.log(miuser);
+        }
+        
     }
 
     onGoogleButtonPress = async () => {
