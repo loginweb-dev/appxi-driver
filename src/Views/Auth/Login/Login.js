@@ -21,6 +21,8 @@ import BackgroundColor from "../../../UI/BackgroundColor";
 import TextInputAlt from "../../../UI/TextInputAlt";
 import ButtonBlock from "../../../UI/ButtonBlock";
 import axios from 'axios';
+import { env } from "../../../config/env";
+
 
 GoogleSignin.configure({
     scopes: ['https://www.googleapis.com/auth/drive.readonly'],
@@ -37,6 +39,7 @@ class Login extends Component {
             password: 'Password',
             loading: false,
             checked: true,
+            userInfo:{},
             showPassword: false
         }
     }
@@ -48,8 +51,7 @@ class Login extends Component {
         if (result.isCancelled) {
             throw 'User cancelled the login process';
         }
-        let miaux = false;
-        let miuser = '';
+
         // Once signed in, get the users AccesToken
         AccessToken.getCurrentAccessToken()
         .then((data) => {
@@ -60,65 +62,21 @@ class Login extends Component {
             // Get information from Facebook API 
             fetch(`https://graph.facebook.com/me?fields=id,name,email&access_token=${data.accessToken}`)
             .then(res => res.json())
-            
-            .then(async res => {
-                console.log(res.email);  
-               const strapi = await axios.get(`https://appxiapi.loginweb.dev/users?email=${res.email}`)
-            //    console.log(strapi.data); 
-                
-                if (strapi.data.length) {
-                    console.log('existe');
-                    
-
-                }else{
-                    console.log('no existe');
-                    let login = {
-                        username: res.name,
-                        email:res.email,
-                        password:'password',
-                        phone: '591',
-                        confirmed:true
-                    }
-                    await axios.post('https://appxiapi.loginweb.dev/users', login);
-
-                    //------------  recuperar Token ----------------
-                    const { data } = await axios.post('https://appxiapi.loginweb.dev/auth/local', {
-                        identifier: res.email,
-                        password: 'password'
-                    }) 
-                    //------------ crear Driver ----------------------
-                    await axios.post('https://appxiapi.loginweb.dev/drivers',{
-                        first_name: res.name,
-                        user_id:  data.user.id
-                    })
-                } 
-                // let user = {
-                //     id: res.id,
-                //     name: res.name,
-                //     email: res.email ? res.email : `${res.id}@loginweb.dev`,
-                //     codePhone: '+591',
-                //     numberPhone: '',
-                //     avatar: `http://graph.facebook.com/${res.id}/picture?type=large`,
-                //     type: 'facebook'
-                // }
-                // this.props.setUser(user);
-                // AsyncStorage.setItem('SessionUser', JSON.stringify(user));
-                // this.props.navigation.reset({
-                //     index: 0,
-                //     routes: [{ name: 'TabMenu' }],
-                //     key: null,
-                // });
+            .then(res => {
+                let user = {
+                    first_name: res.name,
+                    last_name: '',
+                    email: res.email ? res.email : `${res.id}@loginweb.dev`,
+                    password: 'password',
+                    confirmed: true
+                }
+                this.handleLoginSocial(user);
             })
             .catch(error => {
                 console.log(error);
             })
             
         })
-        console.log(miuser);
-        if (miaux) {
-        
-            console.log(miuser);
-        }
         
     }
 
@@ -146,44 +104,71 @@ class Login extends Component {
             console.log(error)
         }
     }
-
-     async handleLogin(){
-        this.setState({loading: true});
-         try {
-            const { data } = await axios.post('https://appxiapi.loginweb.dev/auth/local', {
-                identifier: this.state.email,
-                password: this.state.password
-            })
-            let miavatar = data.user.driver.avatar ? data.user.driver.avatar.url : null;
-            let user = {
-                id: data.user.id,
-                username: data.user.username ,
-                email: data.user.email,
-                name: data.user.driver.first_name,
-                driver: data.user.driver,
-                phone: data.user.phone,
-                avatar: `https://appxiapi.loginweb.dev${miavatar}`,
-                jwt: data.jwt
-            }
-    
-            AsyncStorage.setItem('SessionUser', JSON.stringify(user));
-            this.props.setUser(user);
-            this.props.navigation.reset({
-                  index: 0,
-                  routes: [{ name: 'TabMenu' }],
-                  key: null,
-             });
-         } catch (error) {
-            ToastAndroid.showWithGravity(
-                'Error en credenciales Intenta de nuevo',
-                ToastAndroid.SHORT,
-                ToastAndroid.TOP
-            );
-            this.setState({loading: false, password: ''});
-         }
-        
-    
+    handleLoginSocial(credential){
+        let url = `${env.API}/customers/auth/social`;
+        axios.post(url, credential)
+        .then(res => {
+            // console.log(res.data)
+            this.successLogin(res.data);
+        })
+        .catch(error => console.log(error))
     }
+    async handleLogin(){
+
+        this.setState({loading: true});
+
+        if (this.state.email && this.state.password) {
+
+            let url = `${env.API}/auth/local`;
+
+            let credential = {
+                identifier: this.state.email,
+                password: this.state.password    
+            }
+            let res = await axios.post(url, credential)
+                            .then(res => res.data)
+                            .catch(error => null);     
+            if (res) {
+                let miavatar = res.user.drive.avatar ? res.user.drive.avatar.url : null;
+                let user = {
+                    id: res.user.id,
+                    name: res.user.first_name,
+                    last_name: res.user.last_name,
+                    email: res.user.email,
+                    codePhone: '+591',
+                    numberPhone: res.user.phone,
+                    avatar: `https://appxiapi.loginweb.dev${miavatar}`,
+                    type: 'dashboard',
+                    jwt: res.user.jwt
+                }
+                this.successLogin(user);
+            }else{
+                showMessage({
+                    message: "Credenciales incorrectos",
+                    description: "Su email y/o contrasela no están registrados.",
+                    type: "warning",
+                    icon: 'warning'
+                });
+            }   
+        }else{
+            showMessage({
+                message: "Error de validación",
+                description: "Debe ingresar un email y contraseña válidos.",
+                type: "warning",
+                icon: 'warning'
+            });        
+        }
+    } 
+    
+    successLogin(user){
+        this.props.setUser(user);
+        AsyncStorage.setItem('SessionUser', JSON.stringify(user));
+        this.props.navigation.reset({
+            index: 0,
+            routes: [{ name: 'TabMenu' }],
+            key: null,
+        });
+    } 
 
     render(){
         return (
