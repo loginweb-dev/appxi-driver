@@ -7,16 +7,37 @@ import {
     Text
 } from 'react-native';
 
+import axios from 'axios';
+import AsyncStorage from '@react-native-community/async-storage';
+
 // UI
 import BackgroundColor from "../../../UI/BackgroundColor";
 import TextInputAlt from "../../../UI/TextInputAlt";
 import ButtonBlock from "../../../UI/ButtonBlock";
 import ClearFix from "../../../UI/ClearFix";
-import axios from 'axios';
-import AsyncStorage from '@react-native-community/async-storage';
+import SelectDropDownAlt from "../../../UI/SelectDropDownAlt";
+
 // ----------  REUX ------------------------
 import { connect } from 'react-redux';
 
+// List picker
+const types = [
+    {
+        id: 1,
+        label: 'Java',
+        value: 'Java'
+    },
+    {
+        id: 2,
+        label: 'C++',
+        value: 'C++'
+    },
+    {
+        id: 3,
+        label: 'JavaScript',
+        value: 'JavaScript'
+    }
+]
 
 class Register extends Component {
     constructor(props) {
@@ -28,7 +49,8 @@ class Register extends Component {
             email:'jaiko94.rm@gmail.com',
             password:'Password',
             phone:'76880951',
-            confirmed: true     
+            confirmed: true,
+            language: 'java',
         }
     }
     
@@ -115,6 +137,14 @@ class Register extends Component {
                             password
                             onChangeText={text => this.setState({password: text})}
                             value={this.state.password}
+                        />
+                        <SelectDropDownAlt
+                            label='Tipo'
+                            value={this.state.language}
+                            onValueChange={(itemValue, itemIndex) =>
+                                this.setState({language: itemValue})
+                            }
+                            items={types}
                         />
                         <View style={{ margin: 20, marginTop: 30 }}>
                             <ButtonBlock
