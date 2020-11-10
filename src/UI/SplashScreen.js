@@ -23,11 +23,11 @@ class SplashScreen extends Component {
             this.setState({
                 isLoading: false
             }, () => {
-                console.log(user);
+                // console.log(user);
                 this.props.setUser(user);
                 this.props.navigation.reset({
                     index: 0,
-                    routes: [{ name: user.id ? 'TabMenu' : 'Login' }],
+                    routes: [{ name: user.jwt ? 'TabMenu' : 'Login' }],
                     key: null,
                 });
             });

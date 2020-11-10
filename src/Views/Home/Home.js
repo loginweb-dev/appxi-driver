@@ -25,24 +25,25 @@ export default class Home extends Component {
             <SafeAreaView style={ styles.container }>
                 <ScrollView showsVerticalScrollIndicator={false} style={{ paddingVertical: 10 }}>
                     <CardBorderLeft
-                        title='Carreras realizadas'
-                        description='10'
-                        icon='car-sport-sharp'
-                        borderColor='#2A80DB'
-                    />
-                    <CardBorderLeft
-                        title='Distancia recorrida'
-                        description='7 Km.'
-                        icon='ios-map'
+                        title='Notificaciones'
+                        description='0'
+                        icon='notifications-circle'
                         borderColor='#69CB39'
                     />
                     <CardBorderLeft
+                        title='Carreras realizadas'
+                        description='0'
+                        icon='car-sport-sharp'
+                        borderColor='#2A80DB'
+                    />
+                    
+                    <CardBorderLeft
                         title='Monto acumulado'
-                        description='340 Bs.'
+                        description='0 Bs.'
                         icon='ios-cash-outline'
                         borderColor='#E44F42'
                     />
-                    <LineChart
+                    {/* <LineChart
                         data={{
                             labels: ["Lun", "Mar", "Mie", "Jue", "Vie", "Sáb", "Dom"],
                             datasets: [
@@ -78,7 +79,7 @@ export default class Home extends Component {
                         style={{
                             borderRadius: 10
                         }}
-                    />
+                    /> */}
                     <ClearFix height={50} />
                 </ScrollView>
             </SafeAreaView>

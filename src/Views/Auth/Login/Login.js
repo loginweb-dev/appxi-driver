@@ -35,8 +35,8 @@ class Login extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            email: 'jaiko94.rm@gmail.com',
-            password: 'Password',
+            email: 'percy.alvarez.2017@gmail.com',
+            password: 'password',
             loading: false,
             checked: true,
             userInfo:{},
@@ -114,34 +114,20 @@ class Login extends Component {
         .catch(error => console.log(error))
     }
     async handleLogin(){
-
         this.setState({loading: true});
-
         if (this.state.email && this.state.password) {
-
-            let url = `${env.API}/auth/local`;
-
-            let credential = {
-                identifier: this.state.email,
-                password: this.state.password    
-            }
-            let res = await axios.post(url, credential)
+            let res = await axios.post(`${env.API}/auth/local`, {identifier: this.state.email, password: this.state.password})
                             .then(res => res.data)
-                            .catch(error => null);     
+                            .catch(error => null);    
+            // console.log(res); 
             if (res) {
-                let miavatar = res.user.drive.avatar ? res.user.drive.avatar.url : null;
-                let user = {
-                    id: res.user.id,
-                    name: res.user.first_name,
-                    last_name: res.user.last_name,
-                    email: res.user.email,
-                    codePhone: '+591',
-                    numberPhone: res.user.phone,
-                    avatar: `https://appxiapi.loginweb.dev${miavatar}`,
-                    type: 'dashboard',
-                    jwt: res.user.jwt
-                }
-                this.successLogin(user);
+                this.props.setUser(res);
+                AsyncStorage.setItem('SessionUser', JSON.stringify(res));
+                this.props.navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'TabMenu' }],
+                    key: null,
+                });
             }else{
                 showMessage({
                     message: "Credenciales incorrectos",
@@ -158,16 +144,6 @@ class Login extends Component {
                 icon: 'warning'
             });        
         }
-    } 
-    
-    successLogin(user){
-        this.props.setUser(user);
-        AsyncStorage.setItem('SessionUser', JSON.stringify(user));
-        this.props.navigation.reset({
-            index: 0,
-            routes: [{ name: 'TabMenu' }],
-            key: null,
-        });
     } 
 
     render(){
