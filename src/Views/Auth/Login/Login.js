@@ -35,8 +35,8 @@ class Login extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            email: 'percy.alvarez.2017@gmail.com',
-            password: 'password',
+            email: 'jaiko94',
+            password: '76880954',
             loading: false,
             checked: true,
             userInfo:{},
@@ -63,14 +63,8 @@ class Login extends Component {
             fetch(`https://graph.facebook.com/me?fields=id,name,email&access_token=${data.accessToken}`)
             .then(res => res.json())
             .then(res => {
-                let user = {
-                    first_name: res.name,
-                    last_name: '',
-                    email: res.email ? res.email : `${res.id}@loginweb.dev`,
-                    password: 'password',
-                    confirmed: true
-                }
-                this.handleLoginSocial(user);
+                console.log(res);
+                this.loginfacebook(res);
             })
             .catch(error => {
                 console.log(error);
@@ -79,31 +73,107 @@ class Login extends Component {
         })
         
     }
+    loginfacebook = async (user) => {
+        this.setState({loading: true});
+        const myquery = await axios.get('https://api.appxi.com.bo/users?email='+user.email+'&username='+user.name);
 
-    onGoogleButtonPress = async () => {
-        try {
-            await GoogleSignin.hasPlayServices();
-            const userInfo = await GoogleSignin.signIn();
-            let user = {
-                id: userInfo.user.id,
-                name: userInfo.user.name,
-                email: userInfo.user.email,
-                codePhone: '+591',
-                numberPhone: '',
-                avatar: userInfo.user.photo,
-                type: 'google'
-            }
-            this.props.setUser(user);
-            AsyncStorage.setItem('SessionUser', JSON.stringify(user));
+        if(myquery.data.length > 0 ){
+            const token = await axios.post('https://api.appxi.com.bo/auth/local', {
+                identifier: user.email,
+                password: 'facebook2020'
+            });
+            // console.log(token);
+            AsyncStorage.setItem('SessionUser', JSON.stringify(token));
+            this.props.setUser(token);
             this.props.navigation.reset({
                 index: 0,
                 routes: [{ name: 'TabMenu' }],
                 key: null,
-            });
+            })
+        }else{
+            await axios.post('https://api.appxi.com.bo/auth/local/register', {
+                    username: user.name,
+                    email: user.email,
+                    password: 'facebook2020',
+                    phone: user.id,
+                });
+    
+                const token = await axios.post('https://api.appxi.com.bo/auth/local', {
+                    identifier: user.name,
+                    password: 'facebook2020'
+                }) 
+                console.log(token.data);
+                await axios.post('https://api.appxi.com.bo/drivers',{
+                    alias: token.data.user.name,
+                    users_permissions_user: token.data.user.id
+                })
+                
+                AsyncStorage.setItem('SessionUser', JSON.stringify(token));
+                this.props.setUser(token);
+                this.props.navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'TabMenu' }],
+                    key: null,
+                })
+        }
+    }
+    onGoogleButtonPress = async () => {
+        try {
+            await GoogleSignin.hasPlayServices();
+            const userInfo = await GoogleSignin.signIn();
+            // console.log(userInfo);
+            this.setState({loading: true});
+            // console.log('https://api.appxi.com.bo/users?email='+userInfo.user.email);
+            const myquery = await axios.get('https://api.appxi.com.bo/users?email='+userInfo.user.email+'&username='+userInfo.user.name);
+            // console.log(myquery.data);
+            if(myquery.data.length > 0){
+                const token = await axios.post('https://api.appxi.com.bo/auth/local', {
+                    identifier: userInfo.user.email,
+                    password: 'google2020'
+                });
+                // console.log(token);
+                AsyncStorage.setItem('SessionUser', JSON.stringify(token));
+                this.props.setUser(token);
+                this.props.navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'TabMenu' }],
+                    key: null,
+                })
+            }else{
+                console.log(userInfo);
+                await axios.post('https://api.appxi.com.bo/auth/local/register', {
+                    username: userInfo.user.name,
+                    email: userInfo.user.email,
+                    password: 'google2020',
+                    phone: userInfo.user.id,
+                    // avatar: userInfo.user.photo
+                });
+    
+                const token = await axios.post('https://api.appxi.com.bo/auth/local', {
+                    identifier: userInfo.user.name,
+                    password: 'google2020'
+                }) 
+                // console.log(token.data);
+                await axios.post('https://api.appxi.com.bo/drivers',{
+                    alias: token.data.user.name,
+                    users_permissions_user: token.data.user.id
+                })
+    
+                AsyncStorage.setItem('SessionUser', JSON.stringify(token));
+                this.props.setUser(token);
+                this.props.navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'TabMenu' }],
+                    key: null,
+                })
+            }
+        // console.log(userInfo);
+
         } catch (error) {
             console.log(error)
         }
     }
+    
     handleLoginSocial(credential){
         let url = `${env.API}/customers/auth/social`;
         axios.post(url, credential)
@@ -113,6 +183,7 @@ class Login extends Component {
         })
         .catch(error => console.log(error))
     }
+
     async handleLogin(){
         this.setState({loading: true});
         if (this.state.email && this.state.password) {
@@ -157,7 +228,7 @@ class Login extends Component {
                     
                     <View style={ styles.form }>
                         <TextInputAlt
-                            label='Email'
+                            label='Email o Nombre'
                             placeholder='Tu email o celular'
                             keyboardType='email-address'
                             value={this.state.email}

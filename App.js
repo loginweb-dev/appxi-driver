@@ -137,7 +137,7 @@ function App() {
           onCancelPressed={() => handleAlert(false) }
         />
 
-        <FlashMessage position="top" duration={2300} />
+        <FlashMessage position="top" duration={6000} />
       </NavigationContainer>
     </Provider>
   );

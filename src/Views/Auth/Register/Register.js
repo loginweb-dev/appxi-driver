@@ -9,13 +9,16 @@ import {
 
 import axios from 'axios';
 import AsyncStorage from '@react-native-community/async-storage';
-
+import { env } from "../../../config/env";
 // UI
 import BackgroundColor from "../../../UI/BackgroundColor";
 import TextInputAlt from "../../../UI/TextInputAlt";
 import ButtonBlock from "../../../UI/ButtonBlock";
 import ClearFix from "../../../UI/ClearFix";
 import SelectDropDownAlt from "../../../UI/SelectDropDownAlt";
+
+import {showMessage} from "react-native-flash-message";
+import { CheckBox } from 'react-native';
 
 // ----------  REUX ------------------------
 import { connect } from 'react-redux';
@@ -24,18 +27,18 @@ import { connect } from 'react-redux';
 const types = [
     {
         id: 1,
-        label: 'Java',
-        value: 'Java'
+        label: 'A',
+        value: 'A'
     },
     {
         id: 2,
-        label: 'C++',
-        value: 'C++'
+        label: 'B',
+        value: 'B'
     },
     {
         id: 3,
-        label: 'JavaScript',
-        value: 'JavaScript'
+        label: 'C',
+        value: 'C'
     }
 ]
 
@@ -46,11 +49,14 @@ class Register extends Component {
         this.state = {
             loading: false,
             username:'jaiko94',
-            email:'jaiko94.rm@gmail.com',
-            password:'Password',
-            phone:'76880951',
-            confirmed: true,
-            language: 'java',
+            // email:'jaiko94.rm@gmail.com',
+            // password:'Password',
+            phone:'76880954',
+            language: 'A',
+            experience: '1',
+            checked: false,
+            brand: 'HONDA',
+            model: '2020'
         }
     }
     
@@ -59,93 +65,156 @@ class Register extends Component {
     }
     sendForm = async ()=>{
         this.setState({loading: true});
-        console.log('hola');
-        let login = {
-            username: this.state.username,
-            email:this.state.email,
-            password:this.state.password,
-            phone: this.state.phone,
-            confirmed:true
+        
+        const myquery = await axios.get('https://api.appxi.com.bo/users?username='+this.state.username+'&phone='+this.state.phone);
+        // console.log(myquery.data);
+        if(myquery.data.length > 0 ){
+            showMessage({
+                message: "Error en los Datos ",
+                description: "Nombre o Telefono, Ya se encuentra REGISTRADOS EN APPXI",
+                type: "default",
+                icon: 'info'
+            });
+            this.setState({loading: false});
+        }else{
+
+            if(!this.state.checked){
+                showMessage({
+                    message: "Error en Condiciones ",
+                    description: "Tienes que aceptar las condiciones de uso",
+                    type: "default",
+                    icon: 'info'
+                });
+                this.setState({loading: false});
+            }else{
+                await axios.post('https://api.appxi.com.bo/auth/local/register', {
+                    username: this.state.username,
+                    email: this.state.username+'@appxi.com.bo',
+                    password: this.state.phone,
+                    phone: this.state.phone,
+                });
+    
+                const token = await axios.post('https://api.appxi.com.bo/auth/local', {
+                    identifier: this.state.username,
+                    password: this.state.phone
+                }) 
+                
+                let newdrive = await axios.post('https://api.appxi.com.bo/drivers',{
+                    alias: token.data.user.username,
+                    users_permissions_user: token.data.user.id,
+                    category: this.state.language,
+                    experience: this.state.experience
+                })
+                
+                await axios.post('https://api.appxi.com.bo/driver-vehicles',{
+                    brand: this.state.brand,
+                    modelo: this.state.model
+                })
+                
+                AsyncStorage.setItem('SessionUser', JSON.stringify(token));
+                this.props.setUser(token);
+                this.props.navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'TabMenu' }],
+                    key: null,
+                })
+            }
         }
-
-         await axios.post('https://appxiapi.loginweb.dev/users', login);
-
-        //------------  recuperar Token ----------------
-        const { data } = await axios.post('https://appxiapi.loginweb.dev/auth/local', {
-            identifier: this.state.email,
-            password: this.state.password
-        }) 
-
-        await axios.post('https://appxiapi.loginweb.dev/drivers',{
-            first_name: this.state.username,
-            user_id:  data.user.id
-        })
-
-        let user = {
-            id: data.user.id,
-            username: data.user.username,
-            email: data.user.email,
-            phone: data.user.phone,
-            name: data.user.username,
-            driver: data.user.driver,
-            // avatar: `https://appxiapi.loginweb.dev${miavatar}`,
-            jwt: data.jwt
-        }
-        console.log(user);
-        AsyncStorage.setItem('SessionUser', JSON.stringify(user));
-        this.props.setUser(user);
-        this.props.navigation.reset({
-            index: 0,
-            routes: [{ name: 'TabMenu' }],
-            key: null,
-        })
     }
 
     render(){
         return (
             <SafeAreaView style={styles.container}>
                 <BackgroundColor
-                    title='Registrarse'
+                    title='Registrarse (pre registro)'
                     backgroundColor='trabsparent'
                 />
                 <ScrollView style={{ paddingTop: 20 }} showsVerticalScrollIndicator={false}>
                     <View style={ styles.form }>
-                        <TextInputAlt
-                            label='Nombre completo'
-                            placeholder='Tu nombre completo'
-                            autoCapitalize='words'
-                            onChangeText={text => this.setState({username: text})}
-                            value={this.state.username}
-                        />
-                        <TextInputAlt
-                            label='Número de celular'
-                            placeholder='Tu número de celular'
-                            keyboardType='phone-pad'
-                            onChangeText={text => this.setState({phone: text})}
-                            value={this.state.phone}
-                        />
-                        <TextInputAlt
-                            label='Email'
-                            placeholder='Tu email o celular'
-                            keyboardType='email-address'
-                            onChangeText={text => this.setState({email: text})}
-                            value={this.state.email}
-                        />
-                        <TextInputAlt
+                        <View style={{ flexDirection: 'row' }}>
+                            <View style={{ width: '50%' }}>
+                                <TextInputAlt
+                                    label='Nombre (alias)'
+                                    placeholder='Tu nombre completo'
+                                    autoCapitalize='words'
+                                    onChangeText={text => this.setState({username: text})}
+                                    value={this.state.username}
+                                />
+                            </View>
+                            <View style={{ width: '50%' }}>
+                                <TextInputAlt
+                                    label='Número de celular'
+                                    placeholder='Tu número de celular'
+                                    keyboardType='phone-pad'
+                                    onChangeText={text => this.setState({phone: text})}
+                                    value={this.state.phone}
+                                />
+                            </View>
+                        </View>
+                        
+               
+                        {/* <TextInputAlt
                             label='Contraseña'
                             placeholder='Tu contraseña'
                             password
                             onChangeText={text => this.setState({password: text})}
                             value={this.state.password}
-                        />
-                        <SelectDropDownAlt
-                            label='Tipo'
-                            value={this.state.language}
-                            onValueChange={(itemValue, itemIndex) =>
-                                this.setState({language: itemValue})
-                            }
-                            items={types}
-                        />
+                        /> */}
+                        <View style={{ flexDirection: 'row' }}>
+                            <View style={{ width: '50%' }}>
+                                <SelectDropDownAlt
+                                    label='Categoria de Conducir'
+                                    value={this.state.language}
+                                    onValueChange={(itemValue, itemIndex) =>
+                                        this.setState({language: itemValue})
+                                    }
+                                    items={types}
+                                />
+                            </View>
+                            <View style={{ width: '50%' }}>
+                                <TextInputAlt
+                                    label='Experiencia de Chofer'
+                                    placeholder='experiencia en anios'
+                                    onChangeText={text => this.setState({experience: text})}
+                                    value={this.state.experience}
+                                />
+                            </View>
+                        </View>
+
+                        <View style={{ flexDirection: 'row' }}>
+                            <View style={{ width: '50%' }}>
+                                <TextInputAlt
+                                    label='Marca del Vehiculo'
+                                    placeholder='experiencia en anios'
+                                    onChangeText={text => this.setState({brand: text})}
+                                    value={this.state.brand}
+                                />
+                            </View>
+                            <View style={{ width: '50%' }}>
+                                <TextInputAlt
+                                    label='Modelo del Vehiculo'
+                                    placeholder='experiencia en anios'
+                                    onChangeText={text => this.setState({model: text})}
+                                    value={this.state.model}
+                                />
+                            </View>
+                        </View>
+
+                        <View style={{ flexDirection: 'row', alignContent: 'center', alignItems: 'center' }}>
+                            <CheckBox
+                                value={this.state.checked}
+                                onValueChange={() => this.setState({ checked: !this.state.checked })}
+                            />
+                            <Text style={{ marginRight: 20 }}> Aceptas las Condiciones y uso de APPXI ?</Text>
+                        </View>
+                               
+                        {/* <TextInputAlt
+                            label='Email (opcional)'
+                            placeholder='Tu email o celular'
+                            keyboardType='email-address'
+                            onChangeText={text => this.setState({email: text})}
+                            value={this.state.email}
+                        /> */}
                         <View style={{ margin: 20, marginTop: 30 }}>
                             <ButtonBlock
                                 title={this.state.loading ? 'Enviando...' : 'Registrame'}
